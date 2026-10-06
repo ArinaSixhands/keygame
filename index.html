@@ -1,0 +1,391 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Где же ключ?</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Comic Sans MS', 'Arial', sans-serif;
+    background: linear-gradient(135deg, #87CEEB 0%, #98D8E8 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    user-select: none;
+  }
+  
+  h1 {
+    color: #FF6B9D;
+    font-size: 2.5em;
+    text-shadow: 3px 3px 0 #FFF, 6px 6px 0 rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  
+  .hint {
+    background: #FFF;
+    color: #333;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 1.3em;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    text-align: center;
+    max-width: 600px;
+  }
+  
+  .game-area {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 40px;
+    background: linear-gradient(to bottom, #B0E0E6 0%, #90EE90 70%, #7CCD7C 100%);
+    padding: 30px;
+    border-radius: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    position: relative;
+  }
+  
+  .hero-container {
+    position: relative;
+    cursor: default;
+  }
+  
+  .pocket {
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+  .pocket:hover {
+    transform: scale(1.05);
+    filter: brightness(1.15);
+  }
+  
+  .pocket.disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  
+  .door {
+    cursor: pointer;
+    transition: transform 0.3s;
+    transform-origin: left center;
+  }
+  
+  .door:hover {
+    filter: brightness(1.1);
+  }
+  
+  .door.open {
+    transform: perspective(500px) rotateY(-70deg);
+  }
+  
+  .key-in-hand {
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  
+  .key-in-hand.visible {
+    opacity: 1;
+    animation: keyBounce 0.6s ease;
+  }
+  
+  @keyframes keyBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+  }
+  
+  .message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: #FFD700;
+    color: #333;
+    padding: 40px 60px;
+    border-radius: 30px;
+    font-size: 2em;
+    font-weight: bold;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    z-index: 100;
+    text-align: center;
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  }
+  
+  .message.show {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  
+  .message button {
+    display: block;
+    margin: 20px auto 0;
+    padding: 12px 30px;
+    font-size: 0.7em;
+    background: #FF6B9D;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 4px 0 #CC5580;
+  }
+  
+  .message button:hover {
+    background: #FF85B0;
+  }
+  
+  .message button:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #CC5580;
+  }
+  
+  .status {
+    margin-top: 20px;
+    font-size: 1.2em;
+    color: #333;
+    background: #FFF;
+    padding: 10px 20px;
+    border-radius: 15px;
+    min-height: 40px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>🔑 Где же ключ? 🔑</h1>
+<div class="hint">Найди ключ в карманах и открой дверь!</div>
+
+<div class="game-area">
+  
+  <!-- Герой -->
+  <div class="hero-container">
+    <svg width="280" height="400" viewBox="0 0 280 400">
+      <!-- Тень -->
+      <ellipse cx="140" cy="390" rx="80" ry="8" fill="rgba(0,0,0,0.2)"/>
+      
+      <!-- Ноги/ботинки -->
+      <ellipse cx="105" cy="380" rx="22" ry="10" fill="#333"/>
+      <ellipse cx="175" cy="380" rx="22" ry="10" fill="#333"/>
+      
+      <!-- Штаны -->
+      <path d="M 80 220 L 80 375 Q 80 385 95 385 L 125 385 Q 135 385 135 375 L 135 220 Z" 
+            fill="#4169E1" stroke="#2E4FA8" stroke-width="2"/>
+      <path d="M 145 220 L 145 375 Q 145 385 155 385 L 185 385 Q 200 385 200 375 L 200 220 Z" 
+            fill="#4169E1" stroke="#2E4FA8" stroke-width="2"/>
+      
+      <!-- Пояс -->
+      <rect x="75" y="210" width="130" height="18" fill="#8B4513" stroke="#5C2E0A" stroke-width="2"/>
+      <circle cx="140" cy="219" r="5" fill="#FFD700"/>
+      
+      <!-- Карманы на штанах (6 штук: 3 слева, 3 справа) -->
+      <!-- Левая штанина -->
+      <g class="pocket" data-pocket="0">
+        <rect x="88" y="235" width="40" height="35" rx="4" fill="#5A7FD4" stroke="#2E4FA8" stroke-width="2"/>
+        <line x1="88" y1="245" x2="128" y2="245" stroke="#2E4FA8" stroke-width="1.5"/>
+      </g>
+      <g class="pocket" data-pocket="1">
+        <rect x="88" y="280" width="40" height="35" rx="4" fill="#5A7FD4" stroke="#2E4FA8" stroke-width="2"/>
+        <line x1="88" y1="290" x2="128" y2="290" stroke="#2E4FA8" stroke-width="1.5"/>
+      </g>
+      <g class="pocket" data-pocket="2">
+        <rect x="88" y="325" width="40" height="35" rx="4" fill="#5A7FD4" stroke="#2E4FA8" stroke-width="2"/>
+        <line x1="88" y1="335" x2="128" y2="335" stroke="#2E4FA8" stroke-width="1.5"/>
+      </g>
+      
+      <!-- Правая штанина -->
+      <g class="pocket" data-pocket="3">
+        <rect x="152" y="235" width="40" height="35" rx="4" fill="#5A7FD4" stroke="#2E4FA8" stroke-width="2"/>
+        <line x1="152" y1="245" x2="192" y2="245" stroke="#2E4FA8" stroke-width="1.5"/>
+      </g>
+      <g class="pocket" data-pocket="4">
+        <rect x="152" y="280" width="40" height="35" rx="4" fill="#5A7FD4" stroke="#2E4FA8" stroke-width="2"/>
+        <line x1="152" y1="290" x2="192" y2="290" stroke="#2E4FA8" stroke-width="1.5"/>
+      </g>
+      <g class="pocket" data-pocket="5">
+        <rect x="152" y="325" width="40" height="35" rx="4" fill="#5A7FD4" stroke="#2E4FA8" stroke-width="2"/>
+        <line x1="152" y1="335" x2="192" y2="335" stroke="#2E4FA8" stroke-width="1.5"/>
+      </g>
+      
+      <!-- Тело (футболка) -->
+      <path d="M 75 120 L 75 215 L 205 215 L 205 120 Q 205 100 185 100 L 95 100 Q 75 100 75 120 Z" 
+            fill="#FF6B9D" stroke="#CC5580" stroke-width="2"/>
+      
+      <!-- Руки -->
+      <!-- Левая рука -->
+      <path d="M 75 125 L 50 180 Q 45 190 55 195 L 70 185 L 85 145 Z" 
+            fill="#FFDBAC" stroke="#D4A574" stroke-width="2"/>
+      <!-- Правая рука (будет держать ключ) -->
+      <path d="M 205 125 L 230 180 Q 235 190 225 195 L 210 185 L 195 145 Z" 
+            fill="#FFDBAC" stroke="#D4A574" stroke-width="2"/>
+      
+      <!-- Ключ в правой руке (скрыт сначала) -->
+      <g class="key-in-hand" id="keyInHand">
+        <circle cx="228" cy="195" r="8" fill="none" stroke="#FFD700" stroke-width="3"/>
+        <rect x="225" y="200" width="6" height="20" fill="#FFD700"/>
+        <rect x="222" y="215" width="4" height="3" fill="#FFD700"/>
+        <rect x="228" y="212" width="4" height="3" fill="#FFD700"/>
+      </g>
+      
+      <!-- Голова -->
+      <circle cx="140" cy="60" r="45" fill="#FFDBAC" stroke="#D4A574" stroke-width="2"/>
+      
+      <!-- Волосы -->
+      <path d="M 95 50 Q 100 20 140 15 Q 180 20 185 50 Q 180 35 140 30 Q 100 35 95 50 Z" 
+            fill="#8B4513"/>
+      
+      <!-- Глаза -->
+      <circle cx="122" cy="58" r="5" fill="#333"/>
+      <circle cx="158" cy="58" r="5" fill="#333"/>
+      <circle cx="123" cy="56" r="1.5" fill="#FFF"/>
+      <circle cx="159" cy="56" r="1.5" fill="#FFF"/>
+      
+      <!-- Улыбка -->
+      <path d="M 120 78 Q 140 90 160 78" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+      
+      <!-- Щёчки -->
+      <circle cx="110" cy="72" r="5" fill="#FFB6C1" opacity="0.6"/>
+      <circle cx="170" cy="72" r="5" fill="#FFB6C1" opacity="0.6"/>
+    </svg>
+  </div>
+  
+  <!-- Дверь -->
+  <svg width="150" height="350" viewBox="0 0 150 350">
+    <!-- Косяк двери -->
+    <rect x="5" y="10" width="140" height="340" fill="#8B4513" stroke="#5C2E0A" stroke-width="3"/>
+    
+    <!-- Дверь -->
+    <g class="door" id="door">
+      <rect x="15" y="20" width="120" height="320" fill="#D2691E" stroke="#8B4513" stroke-width="2"/>
+      <!-- Панели -->
+      <rect x="30" y="40" width="90" height="80" fill="none" stroke="#8B4513" stroke-width="2" rx="3"/>
+      <rect x="30" y="140" width="90" height="80" fill="none" stroke="#8B4513" stroke-width="2" rx="3"/>
+      <rect x="30" y="240" width="90" height="80" fill="none" stroke="#8B4513" stroke-width="2" rx="3"/>
+      <!-- Ручка -->
+      <circle cx="115" cy="180" r="8" fill="#FFD700" stroke="#B8860B" stroke-width="2"/>
+      <circle cx="115" cy="180" r="3" fill="#B8860B"/>
+      <!-- Замочная скважина -->
+      <circle cx="115" cy="200" r="3" fill="#333"/>
+      <rect x="113.5" y="200" width="3" height="8" fill="#333"/>
+    </g>
+  </svg>
+  
+</div>
+
+<div class="status" id="status">Нажми на карман, чтобы заглянуть в него 👀</div>
+
+<div class="message" id="message">
+  🎉 Ура! Дверь открыта! 🎉<br>
+  <span style="font-size: 0.7em;">Ты нашёл ключ и открыл дверь!</span>
+  <button onclick="restartGame()">Играть ещё раз</button>
+</div>
+
+<script>
+  // Случайный выбор кармана с ключом
+  let keyPocket = Math.floor(Math.random() * 6);
+  let keyFound = false;
+  let doorOpened = false;
+  
+  const pockets = document.querySelectorAll('.pocket');
+  const door = document.getElementById('door');
+  const keyInHand = document.getElementById('keyInHand');
+  const status = document.getElementById('status');
+  const message = document.getElementById('message');
+  
+  // Обработчик кликов по карманам
+  pockets.forEach(pocket => {
+    pocket.addEventListener('click', function() {
+      // Если ключ уже найден — не открываем другие карманы
+      if (keyFound) {
+        status.textContent = '🔑 Ключ уже у тебя! Иди к двери!';
+        return;
+      }
+      
+      const pocketIndex = parseInt(this.dataset.pocket);
+      
+      // Открываем карман (меняем цвет — карман "открыт")
+      const rect = this.querySelector('rect');
+      rect.setAttribute('fill', '#2E4FA8');
+      rect.setAttribute('stroke', '#1a2f6b');
+      
+      // Проверяем, есть ли ключ в этом кармане
+      if (pocketIndex === keyPocket) {
+        keyFound = true;
+        // Показываем ключ в руке
+        keyInHand.classList.add('visible');
+        status.textContent = '🎉 Нашёл ключ! Теперь нажми на дверь!';
+        
+        // Блокируем остальные карманы (визуально и функционально)
+        pockets.forEach(p => p.classList.add('disabled'));
+      } else {
+        status.textContent = 'Пусто... Поищи в другом кармане 🔍';
+      }
+    });
+  });
+  
+  // Обработчик клика по двери
+  door.addEventListener('click', function() {
+    if (doorOpened) return;
+    
+    if (!keyFound) {
+      // Дверь не открывается без ключа
+      status.textContent = '🔒 Дверь заперта! Нужен ключ...';
+      // Лёгкая анимация "тряски" двери
+      door.style.animation = 'none';
+      setTimeout(() => {
+        door.style.animation = 'shake 0.3s';
+      }, 10);
+      return;
+    }
+    
+    // Ключ есть — дверь открывается!
+    doorOpened = true;
+    door.classList.add('open');
+    status.textContent = '🚪 Дверь открыта!';
+    
+    // Показываем победное сообщение
+    setTimeout(() => {
+      message.classList.add('show');
+    }, 600);
+  });
+  
+  // Перезапуск игры
+  function restartGame() {
+    keyPocket = Math.floor(Math.random() * 6);
+    keyFound = false;
+    doorOpened = false;
+    
+    // Сбрасываем карманы
+    pockets.forEach(pocket => {
+      const rect = pocket.querySelector('rect');
+      rect.setAttribute('fill', '#5A7FD4');
+      rect.setAttribute('stroke', '#2E4FA8');
+      pocket.classList.remove('disabled');
+    });
+    
+    // Сбрасываем ключ и дверь
+    keyInHand.classList.remove('visible');
+    door.classList.remove('open');
+    message.classList.remove('show');
+    status.textContent = 'Нажми на карман, чтобы заглянуть в него 👀';
+  }
+  
+  // Добавляем анимацию тряски двери
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+  `;
+  document.head.appendChild(style);
+</script>
+
+</body>
+</html>
